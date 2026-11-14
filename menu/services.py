@@ -214,6 +214,7 @@ def order_to_dict(order, include_table=False):
     if include_table:
         # Bu blok yalnız panel üçündür: işçinin adı müştəriyə göstərilmir.
         data['table'] = order.table.number
+        data['allowed_next'] = order.allowed_next_statuses()
         data['pay_method'] = order.pay_method
         data['paid_via_display'] = order.get_paid_via_display() if order.paid_via else ''
         data['paid_at'] = timezone.localtime(order.paid_at).strftime('%H:%M') if order.paid_at else ''

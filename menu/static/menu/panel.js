@@ -117,8 +117,9 @@
     if (order.pay_status === 'paid') node.classList.add('order--paid');
 
     const actions = node.querySelector('.order__actions');
+    // Yalnız server icazə verən keçidlərin düymələri (yoxlama yenə serverdədir).
     statusChoices.forEach(([value, label]) => {
-      if (value === order.status) return;
+      if (!order.allowed_next.includes(value)) return;
       const btn = el('button', 'btn btn--small btn--' + value, label);
       btn.type = 'button';
       btn.addEventListener('click', () => changeStatus(order.id, value, btn));

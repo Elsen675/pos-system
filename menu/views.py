@@ -203,10 +203,24 @@ def panel_order_status(request, public_id):
     if new_status not in dict(Order.STATUS_CHOICES):
         return JsonResponse({'error': 'Naməlum status.'}, status=400)
 
-    # Qeyd: statuslar arası keçid qaydaları (məs. served -> new olmaz)
-    # növbəti işlərin 5-ci bəndində əlavə olunacaq.
-    order.status = new_status
-    order.save(update_fields=['status', 'updated_at'])
+    if not order.can_transition_to(new_status):
+        if new_status == Order.STATUS_CANCELLED and order.pay_status == Order.PAY_PAID:
+            message = 'Ödənilmiş sifariş ləğv edilə bilməz. Əvvəlcə menecer ödənişi geri almalıdır.'
+        else:
+            message = f'"{order.get_status_display()}" statusundan bu statusa keçmək olmaz.'
+        return JsonResponse({'error': message}, status=409)
+
+    # Şərtli UPDATE: yalnız status hələ də bizim oxuduğumuz kimidirsə dəyişirik.
+    # Başqa işçi bu arada statusu dəyişibsə (məs. "Verildi" edib), 0 sətir
+    # dəyişir və köhnə məlumata əsaslanan keçid baş vermir.
+    conditions = {'pk': order.pk, 'status': order.status}
+    query = Order.objects.filter(**conditions)
+    if new_status == Order.STATUS_CANCELLED:
+        query = query.exclude(pay_status=Order.PAY_PAID)
+    updated = query.update(status=new_status, updated_at=timezone.now())
+    if updated == 0:
+        return JsonResponse({'error': 'Sifariş bu arada dəyişib. Səhifə yenilənir.'}, status=409)
+    order.refresh_from_db()
     return JsonResponse(order_to_dict(order, include_table=True))
 
 

@@ -266,6 +266,25 @@ class Order(models.Model):
     def __str__(self):
         return f'Sifariş {str(self.public_id)[:8]} — masa {self.table.number}'
 
+    # İş axınının ardıcıllığı. Status yalnız İRƏLİ gedə bilər (addım atlamaq olar,
+    # məsələn new -> ready), geri qayıtmaq olmaz. served və cancelled sondur.
+    STATUS_FLOW = [STATUS_NEW, STATUS_ACCEPTED, STATUS_PREPARING, STATUS_READY, STATUS_SERVED]
+
+    def allowed_next_statuses(self):
+        """Bu sifariş hazırkı vəziyyətdən hansı statuslara keçə bilər."""
+        if self.status in self.FINISHED_STATUSES:
+            return []
+        position = self.STATUS_FLOW.index(self.status)
+        allowed = self.STATUS_FLOW[position + 1:]
+        # Ödənilmiş sifarişi birbaşa ləğv etmək olmaz: əvvəlcə menecer ödənişi
+        # geri almalıdır. Yoxsa "ləğv edilib, amma pul alınıb" kimi qarışıq qalar.
+        if self.pay_status != self.PAY_PAID:
+            allowed.append(self.STATUS_CANCELLED)
+        return allowed
+
+    def can_transition_to(self, new_status):
+        return new_status in self.allowed_next_statuses()
+
     @property
     def short_id(self):
         return str(self.public_id)[:8]

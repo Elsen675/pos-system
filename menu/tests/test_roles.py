@@ -42,8 +42,8 @@ class StaffRoleTests(TestCase):
 
         from .factories import make_table
         order = Order.objects.create(restaurant=self.r, table=make_table(self.r), total=Decimal('1'))
-        for username, role in (('m', 'manager'), ('s', 'staff')):
+        for username, role, new_status in (('m', 'manager', 'accepted'), ('s', 'staff', 'preparing')):
             with self.subTest(role=role):
                 self.client.force_login(make_staff(self.r, username, role=role))
-                resp = self.client.post(f'/panel/orders/{order.public_id}/status/', {'status': 'accepted'})
+                resp = self.client.post(f'/panel/orders/{order.public_id}/status/', {'status': new_status})
                 self.assertEqual(resp.status_code, 200)
