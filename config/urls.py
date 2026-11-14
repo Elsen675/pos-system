@@ -15,3 +15,5 @@ urlpatterns = [
 if settings.DEBUG:
     # İstehsalda media faylları Nginx tərəfindən verilir.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Demo başlanğıc səhifəsi və şifrəsiz demo giriş — YALNIZ inkişafda.
+    urlpatterns += [path('', include('menu.dev_urls'))]

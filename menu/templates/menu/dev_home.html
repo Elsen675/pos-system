@@ -1,0 +1,46 @@
+{% extends "menu/base.html" %}
+{% block title %}Demo başlanğıc{% endblock %}
+{% block content %}
+<main class="container dev">
+  <p class="dev__warn">Bu səhifə yalnız inkişaf rejimində (DEBUG) və yalnız bu kompüterdə görünür.</p>
+  <h1>Demo başlanğıc</h1>
+
+  {% if not restaurant %}
+    <p class="error">Demo restoran yoxdur. Terminalda işlədin: <code>venv/Scripts/python.exe manage.py seed_demo</code></p>
+  {% else %}
+    <section class="dev__card">
+      <h2>1. Müştəri kimi: menyunu aç</h2>
+      <p class="hint">Telefonu NFC karta toxundurmaq bu linkə keçməkdir. Sifariş verin, sonra paneldə görün.</p>
+      <ul class="dev__links">
+        {% for table in tables %}
+          <li><a class="btn" href="{{ table.get_menu_url }}" target="_blank">Masa {{ table.number }} — menyu</a></li>
+        {% endfor %}
+        <li><a class="btn" href="{{ restaurant.get_absolute_url }}" target="_blank">Masasız menyu (yalnız baxış)</a></li>
+      </ul>
+    </section>
+
+    <section class="dev__card">
+      <h2>2. Restoran işçisi kimi: panelə gir</h2>
+      <p class="hint">Şifrəsiz demo giriş. Rolları müqayisə etmək üçün birini başqa brauzerdə / gizli pəncərədə açın.</p>
+      <div class="dev__links">
+        {% for profile in profiles %}
+          <form method="post" action="{% url 'dev_login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="username" value="{{ profile.user.username }}">
+            <button type="submit" class="btn btn--primary">{{ profile.get_role_display }} kimi daxil ol ({{ profile.user.username }})</button>
+          </form>
+        {% endfor %}
+      </div>
+      {% if user.is_authenticated %}
+        <p class="hint">Hazırda daxil olmusunuz: {{ user.get_username }} · <a href="{% url 'menu:panel' %}">Panelə keç</a></p>
+      {% endif %}
+    </section>
+
+    <section class="dev__card">
+      <h2>3. Platforma admini</h2>
+      <p><a class="btn" href="/admin/" target="_blank">Django admin</a></p>
+      <p class="hint">Admin üçün bir dəfə hesab yaradın: <code>venv/Scripts/python.exe manage.py createsuperuser</code></p>
+    </section>
+  {% endif %}
+</main>
+{% endblock %}
