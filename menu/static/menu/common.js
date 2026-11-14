@@ -11,6 +11,15 @@ function getCookie(name) {
   return null;
 }
 
+// <form data-confirm="..."> göndərilməzdən əvvəl təsdiq soruşur.
+// Mətn atributdan oxunur (inline JS yox), Django onu artıq escape edib.
+document.addEventListener('submit', (event) => {
+  const form = event.target;
+  const submitter = event.submitter;
+  const message = (submitter && submitter.dataset.confirm) || form.dataset.confirm;
+  if (message && !window.confirm(message)) event.preventDefault();
+});
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;

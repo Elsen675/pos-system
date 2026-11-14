@@ -1,0 +1,11 @@
+<div class="daynav">
+  <a class="btn btn--small" href="{{ base_url }}?date={{ prev_day|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}">← {{ prev_day|date:"d.m" }}</a>
+  <form method="get" action="{{ base_url }}" class="daynav__form">
+    <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" onchange="this.form.submit()">
+    {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  </form>
+  {% if next_day %}
+    <a class="btn btn--small" href="{{ base_url }}?date={{ next_day|date:'Y-m-d' }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ next_day|date:"d.m" }} →</a>
+  {% endif %}
+  {% if not is_today %}<a class="btn btn--small" href="{{ base_url }}">Bu gün</a>{% endif %}
+</div>

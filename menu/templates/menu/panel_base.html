@@ -6,8 +6,12 @@
     <h1>{{ restaurant.name }}</h1>
     <nav class="panel__nav">
       {% url 'menu:panel' as orders_url %}{% url 'menu:menu_manage' as manage_url %}
+      {% url 'menu:tables' as tables_url %}{% url 'menu:history' as history_url %}{% url 'menu:report' as report_url %}
       <a href="{{ orders_url }}" class="{% if request.path == orders_url %}active{% endif %}">Sifarişlər</a>
+      <a href="{{ tables_url }}" class="{% if request.path == tables_url %}active{% endif %}">Masalar</a>
+      <a href="{{ history_url }}" class="{% if request.path == history_url %}active{% endif %}">Tarixçə</a>
       {% if profile.is_manager %}
+        <a href="{{ report_url }}" class="{% if request.path == report_url %}active{% endif %}">Hesabat</a>
         <a href="{{ manage_url }}" class="{% if request.path|slice:':12' == manage_url %}active{% endif %}">Menyu</a>
       {% endif %}
     </nav>

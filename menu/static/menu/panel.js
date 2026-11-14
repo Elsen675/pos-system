@@ -164,6 +164,11 @@
     if (call.pay_hint_display) text += ' (' + call.pay_hint_display + ')';
     node.appendChild(el('strong', null, text));
     node.appendChild(el('span', 'call__time', call.created_at));
+    if (call.kind === 'bill') {
+      const link = el('a', 'btn btn--small call__link', '🧾 Hesabı aç');
+      link.href = '/panel/tables/#table-' + encodeURIComponent(call.table);
+      node.appendChild(link);
+    }
     const btn = el('button', 'btn btn--small btn--pay', '✓ Həll edildi');
     btn.type = 'button';
     btn.addEventListener('click', () => {

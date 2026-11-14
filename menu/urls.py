@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import manage_views, views
+from . import manage_views, panel_views, views
 
 app_name = 'menu'
 
@@ -16,6 +16,11 @@ urlpatterns = [
     path('panel/calls/<int:pk>/resolve/', views.panel_call_resolve, name='panel_call_resolve'),
     path('panel/orders/<uuid:public_id>/pay/', views.panel_order_pay, name='panel_order_pay'),
     path('panel/orders/<uuid:public_id>/unpay/', views.panel_order_unpay, name='panel_order_unpay'),
+    # Masa üzrə hesab, tarixçə, hesabat
+    path('panel/tables/', panel_views.tables_view, name='tables'),
+    path('panel/tables/<int:number>/close/', panel_views.table_bill_close, name='table_bill_close'),
+    path('panel/history/', panel_views.history_view, name='history'),
+    path('panel/report/', panel_views.report_view, name='report'),
     # Menecer: menyu idarəsi
     path('panel/menu/', manage_views.menu_manage, name='menu_manage'),
     path('panel/menu/items/new/', manage_views.item_create, name='item_create'),

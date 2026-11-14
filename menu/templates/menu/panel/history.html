@@ -1,0 +1,45 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}Tarixçə — {{ restaurant.name }}{% endblock %}
+{% block panel_content %}
+<div class="manage">
+  <div class="manage__toolbar">
+    <h2>Tarixçə · {{ day|date:"d.m.Y" }}</h2>
+    {% include "menu/panel/_day_nav.html" %}
+  </div>
+  <div class="filters">
+    <a href="{{ base_url }}?date={{ day|date:'Y-m-d' }}" class="{% if not status_filter %}active{% endif %}">Hamısı</a>
+    {% for value, label in status_choices %}
+      <a href="{{ base_url }}?date={{ day|date:'Y-m-d' }}&status={{ value }}" class="{% if status_filter == value %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Saat</th><th>Masa</th><th>Sifariş</th><th>Məhsullar</th><th>Status</th><th class="num">Cəmi</th><th>Ödəniş</th></tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr class="{% if order.status == 'cancelled' %}row--off{% endif %}">
+            <td>{{ order.created_at|time:"H:i" }}</td>
+            <td>{{ order.table.number }}</td>
+            <td>#{{ order.short_id }}</td>
+            <td>
+              {% for line in order.items.all %}{{ line.quantity }} × {{ line.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              {% if order.note %}<div class="hint">Qeyd: {{ order.note }}</div>{% endif %}
+            </td>
+            <td>{{ order.get_status_display }}</td>
+            <td class="num">{{ order.total }} ₼</td>
+            <td>
+              {{ order.get_pay_status_display }}
+              {% if order.paid_via %}<div class="hint">{{ order.get_paid_via_display }} · {{ order.paid_at|time:"H:i" }}{% if order.paid_by %} · {{ order.paid_by.get_username }}{% endif %}</div>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="info">Bu gün üçün sifariş yoxdur.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

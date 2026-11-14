@@ -1,0 +1,44 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}Masalar — {{ restaurant.name }}{% endblock %}
+{% block panel_content %}
+<div class="manage">
+  <div class="manage__toolbar">
+    <h2>Açıq hesablar</h2>
+    <a class="btn" href="{% url 'menu:tables' %}">↻ Yenilə</a>
+  </div>
+  <p class="hint">Masada ödəniləcək, hələ ödənilməmiş sifarişlər masa üzrə birləşdirilib.</p>
+
+  {% for table, bill in bills.items %}
+    <section class="manage__cat bill" id="table-{{ table.number }}">
+      <div class="manage__cat-head">
+        <h3>Masa {{ table.number }}</h3>
+        <strong class="bill__total">{{ bill.total }} ₼</strong>
+      </div>
+      {% for order in bill.orders %}
+        <div class="bill__order">
+          <div class="bill__order-head">
+            <span>#{{ order.short_id }} · {{ order.created_at|time:"H:i" }} · {{ order.get_status_display }}</span>
+            <span>{{ order.total }} ₼</span>
+          </div>
+          <ul class="bill__lines">
+            {% for line in order.items.all %}
+              <li><span>{{ line.quantity }} × {{ line.name }}</span><span>{{ line.line_total }} ₼</span></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+      <form method="post" action="{% url 'menu:table_bill_close' table.number %}" class="manage__actions bill__close">
+        {% csrf_token %}
+        {% for order in bill.orders %}<input type="hidden" name="order" value="{{ order.public_id }}">{% endfor %}
+        <span>Hesabı bağla:</span>
+        {% for value, label in paid_via_choices %}
+          <button type="submit" name="via" value="{{ value }}" class="btn btn--pay"
+                  data-confirm="Masa {{ table.number }}: {{ bill.total }} ₼ — {{ label }} ödənildi?">💰 {{ label }}</button>
+        {% endfor %}
+      </form>
+    </section>
+  {% empty %}
+    <p class="info">Açıq hesab yoxdur. Bütün sifarişlər ödənilib.</p>
+  {% endfor %}
+</div>
+{% endblock %}

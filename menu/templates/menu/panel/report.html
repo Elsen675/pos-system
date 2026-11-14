@@ -1,0 +1,67 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}Hesabat — {{ restaurant.name }}{% endblock %}
+{% block panel_content %}
+<div class="manage">
+  <div class="manage__toolbar">
+    <h2>Gündəlik hesabat · {{ day|date:"d.m.Y" }}</h2>
+    {% include "menu/panel/_day_nav.html" %}
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="stat__label">Dövriyyə</span><strong class="stat__value">{{ report.revenue }} ₼</strong></div>
+    <div class="stat"><span class="stat__label">Sifariş</span><strong class="stat__value">{{ report.order_count }}</strong></div>
+    <div class="stat"><span class="stat__label">Orta çek</span><strong class="stat__value">{{ report.average }} ₼</strong></div>
+    <div class="stat"><span class="stat__label">Ləğv edilən</span><strong class="stat__value">{{ report.cancelled_count }}</strong></div>
+  </div>
+
+  <section class="manage__cat">
+    <h3>Ödənişlər</h3>
+    <table class="data data--compact">
+      <tr><td>Nağd</td><td class="num">{{ report.paid_cash }} ₼</td></tr>
+      <tr><td>Terminal</td><td class="num">{{ report.paid_terminal }} ₼</td></tr>
+      {% if report.paid_online %}<tr><td>Onlayn</td><td class="num">{{ report.paid_online }} ₼</td></tr>{% endif %}
+      <tr class="row--strong"><td>Cəmi ödənilib</td><td class="num">{{ report.paid }} ₼</td></tr>
+      <tr class="{% if report.unpaid %}row--warn{% endif %}"><td>Ödənilməyib</td><td class="num">{{ report.unpaid }} ₼</td></tr>
+    </table>
+    <p class="hint">Ləğv edilmiş sifarişlər hesaba daxil deyil. Gün Bakı vaxtı ilə 00:00–24:00 arasında yaradılan sifarişlərdir.</p>
+  </section>
+
+  <section class="manage__cat">
+    <h3>Ən çox satılanlar</h3>
+    {% if report.top_items %}
+      <table class="data data--compact">
+        <thead><tr><th>Yemək</th><th class="num">Say</th><th class="num">Məbləğ</th></tr></thead>
+        {% for row in report.top_items %}
+          <tr><td>{{ row.name }}</td><td class="num">{{ row.qty }}</td><td class="num">{{ row.amount }} ₼</td></tr>
+        {% endfor %}
+      </table>
+    {% else %}<p class="hint">Satış yoxdur.</p>{% endif %}
+  </section>
+
+  {% if report.hours %}
+  <section class="manage__cat">
+    <h3>Saatlar üzrə sifarişlər</h3>
+    <div class="hours">
+      {% for h in report.hours %}
+        <div class="hours__row">
+          <span class="hours__label">{{ h.hour|stringformat:"02d" }}:00</span>
+          <span class="hours__bar"><span style="width: {{ h.percent }}%"></span></span>
+          <span class="hours__count">{{ h.count }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="manage__cat">
+    <h3>Skanlar və çağırışlar</h3>
+    <table class="data data--compact">
+      <tr><td>NFC ilə açılış</td><td class="num">{{ report.scans_nfc }}</td></tr>
+      <tr><td>QR ilə açılış</td><td class="num">{{ report.scans_qr }}</td></tr>
+      <tr><td>Digər (birbaşa link)</td><td class="num">{{ report.scans_other }}</td></tr>
+      <tr><td>Ofisiant çağırışı</td><td class="num">{{ report.calls_waiter }}</td></tr>
+      <tr><td>Hesab istəyi</td><td class="num">{{ report.calls_bill }}</td></tr>
+    </table>
+  </section>
+</div>
+{% endblock %}
