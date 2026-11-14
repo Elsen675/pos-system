@@ -1,0 +1,20 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}{% if category %}{{ category.name }}{% else %}Yeni kateqoriya{% endif %}{% endblock %}
+{% block panel_content %}
+<div class="manage manage--form">
+  <p><a href="{% url 'menu:menu_manage' %}">← Menyuya qayıt</a></p>
+  <h2>{% if category %}"{{ category.name }}" — redaktə{% else %}Yeni kateqoriya{% endif %}</h2>
+  <form method="post" class="form" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form__row{% if field.errors %} form__row--error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+    <p class="hint">Sıra: kiçik rəqəm menyuda yuxarıda görünür.</p>
+    <button type="submit" class="btn btn--primary">Yadda saxla</button>
+  </form>
+</div>
+{% endblock %}

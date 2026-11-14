@@ -1,21 +1,11 @@
-{% extends "menu/base.html" %}
+{% extends "menu/panel_base.html" %}
 {% load static %}
 {% block title %}Panel — {{ restaurant.name }}{% endblock %}
-{% block body_class %}panel{% endblock %}
-{% block content %}
-<header class="panel__header">
-  <h1>{{ restaurant.name }}</h1>
-  <div class="panel__user">
-    <span>{{ request.user.get_username }} · <span class="role">{{ profile.get_role_display }}</span></span>
-    <button type="button" id="sound-toggle" class="btn">🔔 Səsi aktiv et</button>
-    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn" type="submit">Çıxış</button></form>
-  </div>
-</header>
-<main class="panel__main">
+{% block header_extra %}<button type="button" id="sound-toggle" class="btn">🔔 Səsi aktiv et</button>{% endblock %}
+{% block panel_content %}
   <p class="hint">Son yenilənmə: <span id="last-update">—</span> <span id="conn-error" class="error" hidden>Bağlantı xətası</span></p>
   <div id="orders" class="orders"></div>
   <p id="orders-empty" class="info">Aktiv sifariş yoxdur.</p>
-</main>
 <template id="order-template">
   <article class="order">
     <header class="order__head">

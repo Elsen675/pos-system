@@ -1,0 +1,29 @@
+{% extends "menu/base.html" %}
+{% block body_class %}panel{% endblock %}
+{% block content %}
+<header class="panel__header">
+  <div class="panel__brand">
+    <h1>{{ restaurant.name }}</h1>
+    <nav class="panel__nav">
+      {% url 'menu:panel' as orders_url %}{% url 'menu:menu_manage' as manage_url %}
+      <a href="{{ orders_url }}" class="{% if request.path == orders_url %}active{% endif %}">Sifarişlər</a>
+      {% if profile.is_manager %}
+        <a href="{{ manage_url }}" class="{% if request.path|slice:':12' == manage_url %}active{% endif %}">Menyu</a>
+      {% endif %}
+    </nav>
+  </div>
+  <div class="panel__user">
+    <span>{{ request.user.get_username }} · <span class="role">{{ profile.get_role_display }}</span></span>
+    {% block header_extra %}{% endblock %}
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn" type="submit">Çıxış</button></form>
+  </div>
+</header>
+<main class="panel__main">
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li class="msg msg--{{ message.tags }}">{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  {% block panel_content %}{% endblock %}
+</main>
+{% endblock %}

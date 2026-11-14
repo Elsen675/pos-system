@@ -6,6 +6,7 @@ dəyişənlərindən oxunur. `.env` git-ə düşmür (bax: .gitignore), nümunə
 `.env.example` faylına bax.
 """
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -93,6 +94,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    # Testlərdə sürətli (zəif) hash: real şifrə yoxdur, testlər ~5 dəfə tez keçir.
+    # Real işdə yuxarıdakı standart, güclü PBKDF2 hash istifadə olunur.
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 
 LANGUAGE_CODE = 'az'
 TIME_ZONE = 'Asia/Baku'

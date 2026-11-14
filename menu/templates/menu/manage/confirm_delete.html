@@ -1,0 +1,13 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}Silmək{% endblock %}
+{% block panel_content %}
+<div class="manage manage--form">
+  <h2>"{{ object_name }}" silinsin?</h2>
+  {% if warning %}<p class="hint">{{ warning }}</p>{% endif %}
+  <form method="post" class="manage__actions">
+    {% csrf_token %}
+    <button type="submit" class="btn btn--warn">Bəli, sil</button>
+    <a class="btn" href="{% url 'menu:menu_manage' %}">Ləğv et</a>
+  </form>
+</div>
+{% endblock %}

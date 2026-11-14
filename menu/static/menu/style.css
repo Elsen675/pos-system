@@ -69,4 +69,43 @@ h1, h2, h3 { margin: 0 0 8px; }
 .order__pay:empty { display: none; }
 .btn--pay { background: #eafaf0; border-color: #27ae60; color: #1e7b45; font-weight: 600; }
 .paid-info { color: #1e7b45; font-weight: 600; }
+
+/* Panel naviqasiyası və mesajlar */
+.panel__brand { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.panel__brand h1 { margin: 0; font-size: 1.3rem; }
+.panel__nav { display: flex; gap: 4px; }
+.panel__nav a { padding: 6px 12px; border-radius: 8px; text-decoration: none; color: var(--text); }
+.panel__nav a.active { background: var(--accent); color: #fff; }
+.messages { list-style: none; padding: 0; margin: 0 0 12px; }
+.msg { padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; background: #eaf4ff; }
+.msg--success { background: #eafaf0; color: #1e7b45; }
+.msg--error { background: #fdecea; color: var(--accent); }
+.msg--warning { background: #fff3cd; }
+
+/* Menyu idarəsi */
+.manage { max-width: 900px; margin: 0 auto; }
+.manage--form { max-width: 560px; }
+.manage__toolbar, .manage__cat-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.manage__actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.manage__actions form { margin: 0; }
+.manage a.btn { text-decoration: none; color: inherit; display: inline-block; }
+.manage a.btn--primary { color: #fff; }
+.manage__cat { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-top: 16px; }
+.manage__cat h3 { margin: 0; }
+.mitem { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.mitem:first-of-type { margin-top: 8px; }
+.mitem--off .mitem__body, .mitem--off .mitem__img { opacity: 0.5; }
+.mitem__img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+.mitem__img--empty { background: #f1ede6; color: var(--muted); font-size: 0.65rem; display: flex; align-items: center; justify-content: center; text-align: center; }
+.mitem__body { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.mitem__price { color: var(--muted); }
+.mitem__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.mitem__actions form { margin: 0; }
+.mitem__preview { max-width: 200px; border-radius: 10px; }
+.btn--warn { background: #fdecea; border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.form { display: flex; flex-direction: column; gap: 12px; }
+.form__row { display: flex; flex-direction: column; gap: 4px; }
+.form__row input[type=text], .form__row input[type=number], .form__row textarea, .form__row select { font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px; width: 100%; }
+.form__row--error input, .form__row--error select, .form__row--error textarea { border-color: var(--accent); }
+.form__check { display: flex; gap: 8px; align-items: center; }
 .pay-status--paid { color: #1e7b45; }

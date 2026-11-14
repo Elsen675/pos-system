@@ -1,0 +1,27 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}{% if item %}{{ item.name }} — redaktə{% else %}Yeni yemək{% endif %}{% endblock %}
+{% block panel_content %}
+<div class="manage manage--form">
+  <p><a href="{% url 'menu:menu_manage' %}">← Menyuya qayıt</a></p>
+  <h2>{% if item %}{{ item.name }} — redaktə{% else %}Yeni yemək{% endif %}</h2>
+  {% if item.image %}<img class="mitem__preview" src="{{ item.image.url }}" alt="">{% endif %}
+  <form method="post" enctype="multipart/form-data" class="form" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form__row{% if field.errors %} form__row--error{% endif %}">
+        {% if field.name == 'is_available' %}
+          <label class="form__check">{{ field }} {{ field.label }}</label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+    <p class="hint">Şəkil: jpg, png və ya webp, ən çox 5 MB.</p>
+    <button type="submit" class="btn btn--primary">Yadda saxla</button>
+  </form>
+</div>
+{% endblock %}

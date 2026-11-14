@@ -1,12 +1,35 @@
+import os
 import secrets
 import uuid
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+
+
+IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
+
+
+def _random_image_path(folder, filename):
+    """Yüklənən faylın adını təsadüfi UUID ilə əvəz edir.
+
+    İstifadəçinin verdiyi ad saxlanmır: adda "../" kimi qəribə simvollar,
+    şəxsi məlumat və ya eyni adlı fayllar arasında toqquşma ola bilərdi.
+    Uzantı formda yoxlanılır (yalnız IMAGE_EXTENSIONS).
+    """
+    ext = os.path.splitext(filename)[1].lower()
+    return f'{folder}/{uuid.uuid4().hex}{ext}'
+
+
+def item_image_path(instance, filename):
+    return _random_image_path('items', filename)
+
+
+def logo_image_path(instance, filename):
+    return _random_image_path('logos', filename)
 
 
 def generate_table_token():
@@ -24,7 +47,10 @@ def generate_table_token():
 class Restaurant(models.Model):
     name = models.CharField('ad', max_length=120)
     slug = models.SlugField('slug', unique=True)
-    logo = models.ImageField('loqo', upload_to='logos/', blank=True)
+    logo = models.ImageField(
+        'loqo', upload_to=logo_image_path, blank=True,
+        validators=[FileExtensionValidator(IMAGE_EXTENSIONS)],
+    )
     is_active = models.BooleanField('aktivdir', default=True)
     # Boşdursa abunə yoxdur -> xidmət söndürülür (təhlükəsiz standart).
     subscription_until = models.DateField('abunə bitmə tarixi', null=True, blank=True)
@@ -72,7 +98,10 @@ class MenuItem(models.Model):
     price = models.DecimalField(
         'qiymət', max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal('0'))]
     )
-    image = models.ImageField('şəkil', upload_to='items/', blank=True)
+    image = models.ImageField(
+        'şəkil', upload_to=item_image_path, blank=True,
+        validators=[FileExtensionValidator(IMAGE_EXTENSIONS)],
+    )
     is_available = models.BooleanField('mövcuddur', default=True)
     order = models.PositiveIntegerField('sıra', default=0)
 

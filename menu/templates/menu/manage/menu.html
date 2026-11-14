@@ -1,0 +1,59 @@
+{% extends "menu/panel_base.html" %}
+{% block title %}Menyu idarəsi — {{ restaurant.name }}{% endblock %}
+{% block panel_content %}
+<div class="manage">
+  <div class="manage__toolbar">
+    <h2>Menyu</h2>
+    <div class="manage__actions">
+      <a class="btn" href="{% url 'menu:category_create' %}">+ Kateqoriya</a>
+      <a class="btn btn--primary" href="{% url 'menu:item_create' %}">+ Yemək</a>
+      <a class="btn" href="{{ restaurant.get_absolute_url }}" target="_blank">Müştəri görünüşü ↗</a>
+    </div>
+  </div>
+
+  {% for category in categories %}
+    <section class="manage__cat">
+      <div class="manage__cat-head">
+        <h3>{{ category.name }} <span class="hint">· sıra {{ category.order }}</span></h3>
+        <div class="manage__actions">
+          <a class="btn btn--small" href="{% url 'menu:item_create' %}?category={{ category.pk }}">+ Yemək</a>
+          <a class="btn btn--small" href="{% url 'menu:category_edit' category.pk %}">Adını dəyiş</a>
+          {% if not category.items.all %}
+            <a class="btn btn--small" href="{% url 'menu:category_delete' category.pk %}">Sil</a>
+          {% endif %}
+        </div>
+      </div>
+      {% for item in category.items.all %}
+        <article class="mitem{% if not item.is_available %} mitem--off{% endif %}" id="item-{{ item.pk }}">
+          {% if item.image %}
+            <img class="mitem__img" src="{{ item.image.url }}" alt="">
+          {% else %}
+            <div class="mitem__img mitem__img--empty">şəkil yoxdur</div>
+          {% endif %}
+          <div class="mitem__body">
+            <strong>{{ item.name }}</strong>
+            <span class="mitem__price">{{ item.price }} ₼</span>
+            {% if not item.is_available %}<span class="badge">Bitib</span>{% endif %}
+          </div>
+          <div class="mitem__actions">
+            <form method="post" action="{% url 'menu:item_toggle' item.pk %}">
+              {% csrf_token %}
+              {% if item.is_available %}
+                <button type="submit" class="btn btn--small btn--warn">Bitdi</button>
+              {% else %}
+                <button type="submit" class="btn btn--small btn--pay">Yenidən var</button>
+              {% endif %}
+            </form>
+            <a class="btn btn--small" href="{% url 'menu:item_edit' item.pk %}">Redaktə</a>
+            <a class="btn btn--small" href="{% url 'menu:item_delete' item.pk %}">Sil</a>
+          </div>
+        </article>
+      {% empty %}
+        <p class="hint">Bu kateqoriyada yemək yoxdur.</p>
+      {% endfor %}
+    </section>
+  {% empty %}
+    <p class="info">Hələ kateqoriya yoxdur. "+ Kateqoriya" ilə başlayın (məs. "Əsas yeməklər", "İçkilər").</p>
+  {% endfor %}
+</div>
+{% endblock %}
