@@ -53,7 +53,17 @@
   function notify(title, body) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     if (document.visibilityState === 'visible') return;
-    try { new Notification(title, { body: body, tag: title + body }); } catch (e) { /* mobil Chrome */ }
+    const options = { body: body, tag: title + body };
+    // Android Chrome səhifədən `new Notification()`-a icazə vermir, bildirişi
+    // service worker göstərməlidir. Kompüter brauzerlərində hər ikisi işləyir.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg) reg.showNotification(title, options);
+        else new Notification(title, options);
+      }).catch(() => {});
+      return;
+    }
+    try { new Notification(title, options); } catch (e) { /* dəstəklənmir */ }
   }
 
   function beep() {

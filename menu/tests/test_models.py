@@ -56,6 +56,13 @@ class TableTokenTests(TestCase):
         t = make_table(make_restaurant('dadli'), 5)
         self.assertEqual(t.get_menu_url('q'), f'/r/dadli/?t=5&k={t.token}&s=q')
 
+    def test_full_menu_url_uses_site_url(self):
+        t = make_table(make_restaurant('dadli'), 5)
+        with self.settings(SITE_URL='https://misal.pythonanywhere.com'):
+            self.assertEqual(
+                t.get_full_menu_url('n'), f'https://misal.pythonanywhere.com/r/dadli/?t=5&k={t.token}&s=n'
+            )
+
 
 class OrderItemSnapshotTests(TestCase):
     def test_line_total_and_snapshot_survive_menu_changes(self):

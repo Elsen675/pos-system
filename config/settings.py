@@ -40,6 +40,9 @@ if not SECRET_KEY:
 DEBUG = env_bool('DJANGO_DEBUG', False)
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
 CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+# Saytın tam ünvanı (məs. https://istifadeci.pythonanywhere.com). NFC kartlara
+# və QR kodlara yazılan linklər bununla qurulur. Boşdursa linklər nisbi olur.
+SITE_URL = os.environ.get('DJANGO_SITE_URL', '').rstrip('/')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -122,17 +125,47 @@ SESSION_COOKIE_HTTPONLY = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
+SECURE_REFERRER_POLICY = 'same-origin'
+
 if not DEBUG:
-    # İstehsalda (HTTPS arxasında) cookie-lər yalnız HTTPS ilə göndərilir.
+    # İstehsalda (HTTPS arxasında):
+    # - cookie-lər yalnız HTTPS ilə göndərilir (açıq Wi-Fi-də oğurlanmasın);
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # - server proksi (PythonAnywhere / Nginx) arxasındadır; HTTPS-i proksi
+    #   qəbul edir və bunu X-Forwarded-Proto başlığı ilə bildirir;
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # - http:// ilə gələni https://-ə yönləndir (PythonAnywhere-də "Force HTTPS"
+    #   da eyni işi görür, ona görə .env ilə söndürmək olar);
+    SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', True)
+    # - HSTS: brauzer bu saytı N saniyə yalnız HTTPS ilə açır. Əvvəlcə kiçik
+    #   dəyərlə (məs. 3600) yoxlayın; səhv olsa brauzerlər saytı aça bilməz.
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '0'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False  # pythonanywhere.com alt domenlərinə toxunmuruq
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+# Xətalar konsola (PythonAnywhere-də "error log"-a) yazılır.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'loggers': {
+        'django': {'handlers': ['console'], 'level': os.environ.get('DJANGO_LOG_LEVEL', 'WARNING')},
     },
 }
+
+if DEBUG:
+    # İnkişafda "göndərilən" e-poçtlar konsola yazılır. Layihə hələ e-poçt
+    # göndərmir; lazım olanda istehsal üçün SMTP .env-dən qurulacaq.
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        },
+    }
+
+# HSTS alt domenləri və preload: hazırda sayt başqasının domenində
+# (istifadeci.pythonanywhere.com) işləyir, onun alt domenlərinə qayda qoymaq
+# bizim işimiz deyil. Öz domenimizə keçəndə (9-cu bənd) bunlara yenidən baxılır.
+SILENCED_SYSTEM_CHECKS = ['security.W005', 'security.W021']
 
 # --- Biznes parametrləri ---
 # Eyni masadan ORDER_RATE_WINDOW_MINUTES ərzində ən çox ORDER_RATE_LIMIT "new" sifariş.

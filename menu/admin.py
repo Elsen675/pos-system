@@ -49,12 +49,12 @@ class TableAdmin(admin.ModelAdmin):
     @admin.display(description='NFC linki')
     def nfc_link(self, obj):
         # format_html dəyərləri escape edir (XSS-dən qorunma).
-        url = obj.get_menu_url('n')
+        url = obj.get_full_menu_url('n')
         return format_html('<a href="{}" target="_blank">{}</a>', url, url)
 
     @admin.display(description='QR linki')
     def qr_link(self, obj):
-        return obj.get_menu_url('q')
+        return obj.get_full_menu_url('q')
 
     @admin.action(description='Seçilmiş masaların tokenini yenilə (köhnə kartlar işləməyəcək!)')
     def regenerate_tokens(self, request, queryset):

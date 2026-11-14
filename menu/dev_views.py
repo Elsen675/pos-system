@@ -21,8 +21,20 @@ DEMO_SLUG = 'demo'
 LOOPBACK = {'127.0.0.1', '::1'}
 
 
+# Proksi və tunellər (PythonAnywhere, Nginx, Cloudflare, ngrok) bu başlıqları
+# əlavə edir. Tunel ilə gələn sorğunun REMOTE_ADDR-i 127.0.0.1 OLUR (tunel
+# proqramı bu kompüterdə işləyir), ona görə tək REMOTE_ADDR yoxlaması
+# kifayət deyil: internetdən gələn sorğu "yerli" görünərdi.
+PROXY_HEADERS = (
+    'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED_HOST', 'HTTP_X_REAL_IP',
+    'HTTP_FORWARDED', 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_PROTO',
+)
+
+
 def _ensure_dev_request(request):
     if not settings.DEBUG or request.META.get('REMOTE_ADDR') not in LOOPBACK:
+        raise Http404
+    if any(header in request.META for header in PROXY_HEADERS):
         raise Http404
 
 

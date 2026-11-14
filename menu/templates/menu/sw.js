@@ -6,6 +6,17 @@ const CACHE = 'menu-v1';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
+// Panel bildirişinə toxunanda paneli ön plana gətir (və ya aç).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const panel = list.find((c) => new URL(c.url).pathname.startsWith('/panel/'));
+      return panel ? panel.focus() : self.clients.openWindow('/panel/');
+    })
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;

@@ -139,6 +139,10 @@ class Table(models.Model):
         """Karta (source='n') və ya QR-a (source='q') yazılacaq nisbi link."""
         return f'{self.restaurant.get_absolute_url()}?t={self.number}&k={self.token}&s={source}'
 
+    def get_full_menu_url(self, source='n'):
+        """Kartda/QR-da olacaq TAM link: SITE_URL + nisbi link."""
+        return settings.SITE_URL + self.get_menu_url(source)
+
 
 class ScanEvent(models.Model):
     SOURCE_NFC = 'n'

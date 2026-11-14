@@ -37,9 +37,9 @@ class Command(BaseCommand):
                     defaults={'price': Decimal(price), 'description': desc, 'order': i},
                 )
 
-        table = restaurant.tables.get(number=1)
         self.stdout.write(self.style.SUCCESS('Demo hazırdır.'))
-        self.stdout.write(f'Menyu (masa 1): {table.get_menu_url("n")}')
+        for table in restaurant.tables.all():
+            self.stdout.write(f'Masa {table.number}: {table.get_full_menu_url("n")}')
 
         for username, role in (('demo_menecer', StaffProfile.ROLE_MANAGER), ('demo_isci', StaffProfile.ROLE_STAFF)):
             password = secrets.token_urlsafe(9)

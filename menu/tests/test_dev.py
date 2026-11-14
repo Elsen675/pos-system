@@ -9,6 +9,11 @@ from .factories import make_restaurant, make_staff, make_table
 class DevPagesDisabledByDefaultTests(TestCase):
     """Real konfiqurasiyada (DEBUG=False) dev səhifələri ümumiyyətlə yoxdur."""
 
+    def test_custom_404_page(self):
+        resp = self.client.get('/yoxdur/')
+        self.assertEqual(resp.status_code, 404)
+        self.assertContains(resp, 'Səhifə tapılmadı', status_code=404)
+
     def test_root_and_dev_login_are_404(self):
         make_staff(make_restaurant('demo'), 'demo_isci')
         self.assertEqual(self.client.get('/').status_code, 404)
@@ -54,6 +59,16 @@ class DevPagesTests(TestCase):
         resp = self.client.post('/dev/login/', {'username': 'demo_isci'}, REMOTE_ADDR='203.0.113.5')
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(self.client.get('/', REMOTE_ADDR='203.0.113.5').status_code, 404)
+
+    def test_requests_through_proxy_or_tunnel_rejected(self):
+        # Tunel ilə gələn sorğu REMOTE_ADDR=127.0.0.1 olsa da, proksi başlığı daşıyır.
+        for header in ('HTTP_X_FORWARDED_FOR', 'HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP'):
+            with self.subTest(header=header):
+                extra = {header: '203.0.113.5'}
+                self.assertEqual(self.client.get('/', **extra).status_code, 404)
+                resp = self.client.post('/dev/login/', {'username': 'demo_isci'}, **extra)
+                self.assertEqual(resp.status_code, 404)
+        self.assertNotIn('_auth_user_id', self.client.session)
 
     def test_cannot_login_as_other_restaurant_staff(self):
         make_staff(make_restaurant('real'), 'real_isci')
