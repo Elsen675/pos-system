@@ -1,0 +1,20 @@
+{% extends "menu/base.html" %}
+{% load static %}
+{% block title %}Sifariş #{{ order.short_id }}{% endblock %}
+{% block content %}
+<main class="container" id="status-page" data-json-url="{% url 'menu:order_status_json' order.public_id %}">
+  <h1>{{ order.restaurant.name }}</h1>
+  <p>Masa {{ order.table.number }} · Sifariş #{{ order.short_id }}</p>
+  <p class="status">Status: <strong id="order-status" class="status--{{ order.status }}">{{ order.get_status_display }}</strong></p>
+  <ul class="lines">
+    {% for line in items %}
+      <li><span>{{ line.quantity }} × {{ line.name }}</span><span>{{ line.line_total }} ₼</span></li>
+    {% endfor %}
+  </ul>
+  {% if order.note %}<p class="note">Qeyd: {{ order.note }}</p>{% endif %}
+  <p class="total">Cəmi: <strong>{{ order.total }} ₼</strong></p>
+  <p class="hint">Bu səhifə avtomatik yenilənir.</p>
+  <p><a href="{{ order.table.get_menu_url }}">Menyuya qayıt</a></p>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{% static 'menu/status.js' %}"></script>{% endblock %}

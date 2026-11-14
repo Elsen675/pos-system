@@ -1,0 +1,34 @@
+{% extends "menu/base.html" %}
+{% load static %}
+{% block title %}Panel — {{ restaurant.name }}{% endblock %}
+{% block body_class %}panel{% endblock %}
+{% block content %}
+<header class="panel__header">
+  <h1>{{ restaurant.name }}</h1>
+  <div class="panel__user">
+    <span>{{ request.user.get_username }}</span>
+    <button type="button" id="sound-toggle" class="btn">🔔 Səsi aktiv et</button>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn" type="submit">Çıxış</button></form>
+  </div>
+</header>
+<main class="panel__main">
+  <p class="hint">Son yenilənmə: <span id="last-update">—</span> <span id="conn-error" class="error" hidden>Bağlantı xətası</span></p>
+  <div id="orders" class="orders"></div>
+  <p id="orders-empty" class="info">Aktiv sifariş yoxdur.</p>
+</main>
+<template id="order-template">
+  <article class="order">
+    <header class="order__head">
+      <strong class="order__table"></strong>
+      <span class="order__time"></span>
+      <span class="order__status"></span>
+    </header>
+    <ul class="order__items"></ul>
+    <p class="order__note"></p>
+    <p class="order__total"></p>
+    <div class="order__actions"></div>
+  </article>
+</template>
+{{ status_choices|json_script:"status-choices" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'menu/panel.js' %}"></script>{% endblock %}

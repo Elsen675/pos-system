@@ -1,0 +1,15 @@
+{% extends "menu/base.html" %}
+{% block title %}Giriş{% endblock %}
+{% block content %}
+<main class="container login">
+  <h1>Restoran panelinə giriş</h1>
+  {% if form.errors %}<p class="error">İstifadəçi adı və ya şifrə yanlışdır.</p>{% endif %}
+  <form method="post" action="{% url 'login' %}">
+    {% csrf_token %}
+    <label>İstifadəçi adı {{ form.username }}</label>
+    <label>Şifrə {{ form.password }}</label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="btn btn--primary">Daxil ol</button>
+  </form>
+</main>
+{% endblock %}

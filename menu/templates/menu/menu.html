@@ -1,0 +1,64 @@
+{% extends "menu/base.html" %}
+{% load static %}
+{% block title %}{{ restaurant.name }} — Menyu{% endblock %}
+{% block content %}
+<header class="header">
+  {% if restaurant.logo %}<img class="logo" src="{{ restaurant.logo.url }}" alt="">{% endif %}
+  <h1>{{ restaurant.name }}</h1>
+  {% if table %}<p class="table-badge">Masa {{ table.number }}</p>{% endif %}
+</header>
+
+<main class="container">
+  {% if not table %}
+    <p class="info">Sifariş vermək üçün masadakı kartı telefonunuza toxundurun və ya QR kodu skan edin.</p>
+  {% endif %}
+
+  {% for category in categories %}
+    {% if category.items.all %}
+    <section class="category">
+      <h2>{{ category.name }}</h2>
+      {% for item in category.items.all %}
+        <article class="item{% if not item.is_available %} item--off{% endif %}">
+          {% if item.image %}<img class="item__img" src="{{ item.image.url }}" alt="" loading="lazy">{% endif %}
+          <div class="item__body">
+            <h3>{{ item.name }}</h3>
+            {% if item.description %}<p class="item__desc">{{ item.description }}</p>{% endif %}
+            <p class="item__price">{{ item.price }} ₼</p>
+          </div>
+          {% if not item.is_available %}
+            <span class="badge">Bitib</span>
+          {% elif order_context %}
+            <div class="qty" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price|stringformat:'s' }}">
+              <button type="button" class="qty__btn" data-delta="-1" aria-label="Azalt">−</button>
+              <span class="qty__val">0</span>
+              <button type="button" class="qty__btn" data-delta="1" aria-label="Artır">+</button>
+            </div>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+  {% empty %}
+    <p class="info">Menyu hələ əlavə edilməyib.</p>
+  {% endfor %}
+</main>
+
+{% if order_context %}
+<div id="cart" class="cart" hidden>
+  <textarea id="cart-note" maxlength="500" rows="2" placeholder="Qeyd (məs. soğansız)"></textarea>
+  <div class="cart__row">
+    <span>Cəmi: <strong id="cart-total">0.00</strong> ₼</span>
+    <button type="button" id="cart-submit" class="btn btn--primary">Sifariş ver</button>
+  </div>
+  <p id="cart-error" class="error" hidden></p>
+  <p class="hint">Yekun məbləğ restoranın menyusundakı qiymətlərə görə hesablanır.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if order_context %}
+  {{ order_context|json_script:"order-context" }}
+  <script src="{% static 'menu/menu.js' %}"></script>
+{% endif %}
+{% endblock %}
