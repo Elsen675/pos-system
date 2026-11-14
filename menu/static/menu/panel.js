@@ -2,7 +2,9 @@
 (function () {
   const FEED_URL = '/panel/orders/feed/';
   const statusUrl = (id) => '/panel/orders/' + encodeURIComponent(id) + '/status/';
-  const statusChoices = JSON.parse(document.getElementById('status-choices').textContent);
+  const config = JSON.parse(document.getElementById('panel-config').textContent);
+  const statusChoices = config.statusChoices;
+  const orderUrl = (id, action) => '/panel/orders/' + encodeURIComponent(id) + '/' + action + '/';
   const ordersEl = document.getElementById('orders');
   const emptyEl = document.getElementById('orders-empty');
   const lastUpdateEl = document.getElementById('last-update');
@@ -39,23 +41,59 @@
     });
   }
 
-  async function changeStatus(id, status, button) {
+  async function postAction(url, body, button, fallbackError) {
     button.disabled = true;
     try {
-      const res = await fetch(statusUrl(id), {
+      const res = await fetch(url, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') || '' },
-        body: JSON.stringify({ status: status }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Status dəyişmədi.');
+        alert(data.error || fallbackError);
       }
     } catch (e) {
       alert('Bağlantı xətası.');
     }
     load();
+  }
+
+  function changeStatus(id, status, button) {
+    postAction(statusUrl(id), { status: status }, button, 'Status dəyişmədi.');
+  }
+
+  function renderPayment(order, box) {
+    if (order.pay_status === 'paid') {
+      const parts = ['✔ Ödənilib'];
+      if (order.paid_via_display) parts.push(order.paid_via_display);
+      if (order.paid_at) parts.push(order.paid_at);
+      if (order.paid_by) parts.push(order.paid_by);
+      box.appendChild(el('span', 'paid-info', parts.join(' · ')));
+      if (config.isManager && order.pay_method === 'table') {
+        const undo = el('button', 'btn btn--small', 'Geri al');
+        undo.type = 'button';
+        undo.addEventListener('click', () => {
+          if (confirm('Ödəniş qeydini geri almaq istəyirsiniz?')) {
+            postAction(orderUrl(order.id, 'unpay'), {}, undo, 'Ödəniş geri alınmadı.');
+          }
+        });
+        box.appendChild(undo);
+      }
+      return;
+    }
+    if (order.pay_method !== 'table' || order.status === 'cancelled') return;
+    config.paidViaChoices.forEach(([value, label]) => {
+      const btn = el('button', 'btn btn--small btn--pay', '💰 ' + label + ' ödənildi');
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        if (confirm('Masa ' + order.table + ': ' + order.total + ' ₼ — ' + label + ' ödənildi?')) {
+          postAction(orderUrl(order.id, 'pay'), { via: value }, btn, 'Ödəniş qeyd edilmədi.');
+        }
+      });
+      box.appendChild(btn);
+    });
   }
 
   function renderOrder(order) {
@@ -74,6 +112,9 @@
 
     node.querySelector('.order__total').textContent =
       'Cəmi: ' + order.total + ' ₼ · ' + order.pay_status_display;
+
+    renderPayment(order, node.querySelector('.order__pay'));
+    if (order.pay_status === 'paid') node.classList.add('order--paid');
 
     const actions = node.querySelector('.order__actions');
     statusChoices.forEach(([value, label]) => {

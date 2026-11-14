@@ -94,5 +94,8 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('short_id', 'restaurant', 'table', 'status', 'total', 'pay_status', 'created_at')
     list_filter = ('restaurant', 'status', 'pay_status')
-    readonly_fields = ('public_id', 'restaurant', 'table', 'total', 'created_at', 'updated_at')
+    readonly_fields = (
+        'public_id', 'restaurant', 'table', 'total', 'created_at', 'updated_at',
+        'paid_via', 'paid_at', 'paid_by',
+    )
     inlines = [OrderItemInline]

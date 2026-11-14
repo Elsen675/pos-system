@@ -14,7 +14,14 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import Category, MenuItem, Order, Restaurant, ScanEvent, StaffProfile
-from .services import OrderError, create_order, find_table, order_to_dict
+from .services import (
+    OrderError,
+    create_order,
+    find_table,
+    mark_paid_at_table,
+    order_to_dict,
+    undo_table_payment,
+)
 
 
 def service_unavailable(request, restaurant):
@@ -145,7 +152,13 @@ def panel_view(request):
     return render(request, 'menu/panel.html', {
         'restaurant': request.staff_profile.restaurant,
         'profile': request.staff_profile,
-        'status_choices': Order.STATUS_CHOICES,
+        'panel_config': {
+            'statusChoices': Order.STATUS_CHOICES,
+            'paidViaChoices': Order.PAID_VIA_CHOICES,
+            # Yalnız düyməni göstərib-gizlətmək üçündür. Əsl yoxlama serverdədir:
+            # işçi JS-i dəyişib düyməni çıxarsa belə server 403 qaytarır.
+            'isManager': request.staff_profile.is_manager,
+        },
     })
 
 
@@ -165,7 +178,7 @@ def panel_feed(request):
     )
     orders = (
         (active | recent_finished)
-        .select_related('table')
+        .select_related('table', 'paid_by')
         .prefetch_related('items')
         .order_by('-created_at')[:200]
     )
@@ -182,13 +195,10 @@ def panel_order_status(request, public_id):
     # Başqa restoranın sifarişinin UUID-i bilinsə belə 404 qaytarılır.
     order = get_object_or_404(Order, public_id=public_id, restaurant=request.staff_profile.restaurant)
 
-    if request.content_type == 'application/json':
-        try:
-            new_status = json.loads(request.body or b'{}').get('status')
-        except (json.JSONDecodeError, UnicodeDecodeError, AttributeError):
-            return JsonResponse({'error': 'Sorğu düzgün deyil.'}, status=400)
-    else:
-        new_status = request.POST.get('status')
+    try:
+        new_status = _read_field(request, 'status')
+    except ValueError:
+        return JsonResponse({'error': 'Sorğu düzgün deyil.'}, status=400)
 
     if new_status not in dict(Order.STATUS_CHOICES):
         return JsonResponse({'error': 'Naməlum status.'}, status=400)
@@ -197,4 +207,51 @@ def panel_order_status(request, public_id):
     # növbəti işlərin 5-ci bəndində əlavə olunacaq.
     order.status = new_status
     order.save(update_fields=['status', 'updated_at'])
+    return JsonResponse(order_to_dict(order, include_table=True))
+
+
+def _read_field(request, name):
+    """JSON və ya adi form POST-dan bir sahəni oxuyur. Pozuq JSON-da ValueError."""
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body or b'{}')
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ValueError from exc
+        if not isinstance(data, dict):
+            raise ValueError
+        return data.get(name)
+    return request.POST.get(name)
+
+
+@require_POST
+@staff_required
+def panel_order_pay(request, public_id):
+    """Masada ödənişi qeyd edir (nağd / terminal). Hər iki rol edə bilər."""
+    order = get_object_or_404(Order, public_id=public_id, restaurant=request.staff_profile.restaurant)
+    try:
+        via = _read_field(request, 'via')
+    except ValueError:
+        return JsonResponse({'error': 'Sorğu düzgün deyil.'}, status=400)
+    try:
+        order = mark_paid_at_table(order, request.user, via)
+    except OrderError as exc:
+        return JsonResponse({'error': exc.message}, status=exc.status)
+    return JsonResponse(order_to_dict(order, include_table=True))
+
+
+@require_POST
+@staff_required
+def panel_order_unpay(request, public_id):
+    """Səhvən qeyd edilmiş ödənişi geri alır. YALNIZ menecer.
+
+    İşçi pulu alıb ödənişi "geri ala" bilsəydi, sifariş ödənilməmiş görünər
+    və pul itərdi. Ona görə bu hüquq yalnız menecerdədir.
+    """
+    if not request.staff_profile.is_manager:
+        return JsonResponse({'error': 'Bunu yalnız menecer edə bilər.'}, status=403)
+    order = get_object_or_404(Order, public_id=public_id, restaurant=request.staff_profile.restaurant)
+    try:
+        order = undo_table_payment(order)
+    except OrderError as exc:
+        return JsonResponse({'error': exc.message}, status=exc.status)
     return JsonResponse(order_to_dict(order, include_table=True))

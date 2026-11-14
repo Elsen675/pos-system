@@ -26,9 +26,10 @@
     <ul class="order__items"></ul>
     <p class="order__note"></p>
     <p class="order__total"></p>
+    <div class="order__pay"></div>
     <div class="order__actions"></div>
   </article>
 </template>
-{{ status_choices|json_script:"status-choices" }}
+{{ panel_config|json_script:"panel-config" }}
 {% endblock %}
 {% block scripts %}<script src="{% static 'menu/panel.js' %}"></script>{% endblock %}

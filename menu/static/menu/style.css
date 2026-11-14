@@ -58,3 +58,8 @@ h1, h2, h3 { margin: 0 0 8px; }
 .order__items { padding-left: 18px; margin: 8px 0; }
 .order__note { background: #fff6e0; padding: 6px; border-radius: 6px; }
 .order__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.order__pay { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.order__pay:empty { display: none; }
+.btn--pay { background: #eafaf0; border-color: #27ae60; color: #1e7b45; font-weight: 600; }
+.paid-info { color: #1e7b45; font-weight: 600; }
+.pay-status--paid { color: #1e7b45; }

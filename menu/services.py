@@ -142,6 +142,58 @@ def create_order(restaurant, payload):
     return order
 
 
+def mark_paid_at_table(order, user, via):
+    """İşçi masada pulu aldıqdan sonra sifarişi "Ödənilib" kimi qeyd edir.
+
+    Niyə adi `order.pay_status = 'paid'; order.save()` yox?
+    İki işçi eyni anda düyməni bassa (və ya bir işçi iki dəfə), hər ikisi
+    köhnə "unpaid" vəziyyətini oxuyub yazardı və sonuncu birincinin
+    məlumatını (kim, nə vaxt, necə) üstələyərdi. Burada isə bazaya bir
+    şərtli əmr gedir:
+        UPDATE ... SET pay_status='paid' WHERE id=... AND pay_status='unpaid'
+    Baza bunu atomik icra edir: yalnız BİRİNCİ sorğu 1 sətir dəyişir,
+    ikincisi 0 sətir dəyişir və biz ona "artıq ödənilib" deyirik.
+    """
+    if via not in dict(Order.PAID_VIA_CHOICES):
+        raise OrderError('Ödəniş üsulu düzgün deyil.')
+    # Onlayn ödənişi işçi əl ilə "ödənilib" edə bilməz: o yalnız bankın
+    # təsdiqlənmiş webhook-u ilə dəyişir (bax: CLAUDE.md, ödəniş dizaynı).
+    if order.pay_method != Order.PAY_TABLE:
+        raise OrderError('Onlayn ödəniş paneldən qeyd edilmir.', status=409)
+    if order.status == Order.STATUS_CANCELLED:
+        raise OrderError('Ləğv edilmiş sifariş ödənilə bilməz.', status=409)
+
+    updated = Order.objects.filter(
+        pk=order.pk,
+        pay_method=Order.PAY_TABLE,
+        pay_status__in=(Order.PAY_UNPAID, Order.PAY_FAILED),
+    ).exclude(status=Order.STATUS_CANCELLED).update(
+        pay_status=Order.PAY_PAID,
+        paid_via=via,
+        paid_at=timezone.now(),
+        paid_by=user,
+        updated_at=timezone.now(),  # update() auto_now-u özü yeniləmir
+    )
+    if updated == 0:
+        raise OrderError('Bu sifariş artıq ödənilib.', status=409)
+    order.refresh_from_db()
+    return order
+
+
+def undo_table_payment(order):
+    """Səhvən qeyd edilmiş masada ödənişi geri alır (yalnız menecer çağırır)."""
+    updated = Order.objects.filter(
+        pk=order.pk, pay_method=Order.PAY_TABLE, pay_status=Order.PAY_PAID,
+    ).update(
+        pay_status=Order.PAY_UNPAID, paid_via='', paid_at=None, paid_by=None,
+        updated_at=timezone.now(),
+    )
+    if updated == 0:
+        raise OrderError('Bu sifariş ödənilmiş vəziyyətdə deyil.', status=409)
+    order.refresh_from_db()
+    return order
+
+
 def order_to_dict(order, include_table=False):
     """JSON cavabı üçün. Mətnlər xam qaytarılır, JS onları textContent ilə yazır."""
     data = {
@@ -160,5 +212,10 @@ def order_to_dict(order, include_table=False):
         ],
     }
     if include_table:
+        # Bu blok yalnız panel üçündür: işçinin adı müştəriyə göstərilmir.
         data['table'] = order.table.number
+        data['pay_method'] = order.pay_method
+        data['paid_via_display'] = order.get_paid_via_display() if order.paid_via else ''
+        data['paid_at'] = timezone.localtime(order.paid_at).strftime('%H:%M') if order.paid_at else ''
+        data['paid_by'] = order.paid_by.get_username() if order.paid_by_id else ''
     return data

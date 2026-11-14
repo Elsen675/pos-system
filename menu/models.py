@@ -207,6 +207,21 @@ class Order(models.Model):
     total = models.DecimalField('cəmi', max_digits=10, decimal_places=2, default=Decimal('0'))
     pay_method = models.CharField('ödəniş üsulu', max_length=10, choices=PAY_METHOD_CHOICES, default=PAY_TABLE)
     pay_status = models.CharField('ödəniş statusu', max_length=10, choices=PAY_STATUS_CHOICES, default=PAY_UNPAID)
+
+    # Masada ödəniş: işçi pulu (nağd və ya POS terminal) aldıqdan sonra qeyd edir.
+    # Kim və nə vaxt qeyd etdiyi saxlanılır ki, kassada uyğunsuzluq olanda yoxlamaq olsun.
+    PAID_VIA_CASH = 'cash'
+    PAID_VIA_TERMINAL = 'terminal'
+    PAID_VIA_CHOICES = [
+        (PAID_VIA_CASH, 'Nağd'),
+        (PAID_VIA_TERMINAL, 'Terminal'),
+    ]
+    paid_via = models.CharField('necə ödənilib', max_length=10, choices=PAID_VIA_CHOICES, blank=True)
+    paid_at = models.DateTimeField('ödəniş vaxtı', null=True, blank=True)
+    paid_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+', verbose_name='ödənişi qeyd edən',
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 

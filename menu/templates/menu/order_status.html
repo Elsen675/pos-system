@@ -13,6 +13,7 @@
   </ul>
   {% if order.note %}<p class="note">Qeyd: {{ order.note }}</p>{% endif %}
   <p class="total">Cəmi: <strong>{{ order.total }} ₼</strong></p>
+  <p>Ödəniş: <strong id="pay-status" class="pay-status--{{ order.pay_status }}">{{ order.get_pay_status_display }}</strong></p>
   <p class="hint">Bu səhifə avtomatik yenilənir.</p>
   <p><a href="{{ order.table.get_menu_url }}">Menyuya qayıt</a></p>
 </main>

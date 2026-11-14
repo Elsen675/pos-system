@@ -12,5 +12,7 @@ urlpatterns = [
     path('panel/', views.panel_view, name='panel'),
     path('panel/orders/feed/', views.panel_feed, name='panel_feed'),
     path('panel/orders/<uuid:public_id>/status/', views.panel_order_status, name='panel_order_status'),
+    path('panel/orders/<uuid:public_id>/pay/', views.panel_order_pay, name='panel_order_pay'),
+    path('panel/orders/<uuid:public_id>/unpay/', views.panel_order_unpay, name='panel_order_unpay'),
     path('sw.js', views.service_worker, name='service_worker'),
 ]

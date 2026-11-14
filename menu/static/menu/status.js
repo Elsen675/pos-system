@@ -2,6 +2,7 @@
 (function () {
   const page = document.getElementById('status-page');
   const statusEl = document.getElementById('order-status');
+  const payEl = document.getElementById('pay-status');
   const url = page.dataset.jsonUrl;
   const FINAL = ['served', 'cancelled'];
 
@@ -12,7 +13,10 @@
         const data = await res.json();
         statusEl.textContent = data.status_display;
         statusEl.className = 'status--' + data.status;
-        if (FINAL.includes(data.status)) return; // bitmiş sifarişi daha yoxlamırıq
+        payEl.textContent = data.pay_status_display;
+        payEl.className = 'pay-status--' + data.pay_status;
+        // Sifariş bitib VƏ ödəniş məsələsi bağlanıbsa daha yoxlamırıq.
+        if (FINAL.includes(data.status) && (data.status === 'cancelled' || data.pay_status === 'paid')) return;
       }
     } catch (e) { /* şəbəkə xətası: növbəti dəfə yenə cəhd edirik */ }
     setTimeout(poll, 5000);
