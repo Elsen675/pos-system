@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.utils.html import format_html
 
-from .models import Category, MenuItem, Order, OrderItem, Restaurant, ScanEvent, StaffProfile, Table
+from .models import Category, MenuItem, Order, OrderItem, Restaurant, ScanEvent, ServiceCall, StaffProfile, Table
 
 
 class TableInline(admin.TabularInline):
@@ -99,3 +99,10 @@ class OrderAdmin(admin.ModelAdmin):
         'paid_via', 'paid_at', 'paid_by',
     )
     inlines = [OrderItemInline]
+
+
+@admin.register(ServiceCall)
+class ServiceCallAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'restaurant', 'table', 'kind', 'pay_hint', 'resolved_at', 'resolved_by')
+    list_filter = ('restaurant', 'kind')
+    readonly_fields = ('restaurant', 'table', 'kind', 'pay_hint', 'created_at', 'resolved_at', 'resolved_by')

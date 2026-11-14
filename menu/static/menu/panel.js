@@ -12,19 +12,49 @@
   const template = document.getElementById('order-template');
   const soundBtn = document.getElementById('sound-toggle');
 
+  const callsEl = document.getElementById('calls');
+  const baseTitle = document.title;
+
   let knownNewIds = null; // ilk yükləmədə səs çalmamaq üçün null
+  let knownCallIds = null;
   let audioCtx = null;
+  let wakeLock = null;
 
   // Brauzerlər istifadəçi toxunmadan səs çalmağa icazə vermir,
   // ona görə işçi bir dəfə "Səsi aktiv et" düyməsini basmalıdır.
-  soundBtn.addEventListener('click', () => {
+  // Eyni düymə brauzer bildirişinə icazə istəyir və ekranın sönməsinin
+  // qarşısını alır (piştaxtadakı planşet üçün).
+  soundBtn.addEventListener('click', async () => {
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    audioCtx = audioCtx || new Ctx();
-    audioCtx.resume();
-    beep();
+    if (Ctx) {
+      audioCtx = audioCtx || new Ctx();
+      audioCtx.resume();
+      beep();
+    }
+    if ('Notification' in window && Notification.permission === 'default') {
+      try { await Notification.requestPermission(); } catch (e) { /* köhnə brauzer */ }
+    }
+    await keepScreenOn();
     soundBtn.textContent = '🔔 Səs aktivdir';
   });
+
+  async function keepScreenOn() {
+    if (!('wakeLock' in navigator)) return;
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { wakeLock = null; }
+  }
+  // Tab gizlənəndə brauzer kilidi buraxır; geri qayıdanda yenidən alırıq.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && audioCtx && !wakeLock) keepScreenOn();
+    if (document.visibilityState === 'hidden') wakeLock = null;
+  });
+
+  // Tab arxa plandadırsa (işçi başqa tabdadır) sistem bildirişi göstəririk.
+  // Bu, brauzer açıq olduqca işləyir; brauzer tam bağlıdırsa işləmir.
+  function notify(title, body) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible') return;
+    try { new Notification(title, { body: body, tag: title + body }); } catch (e) { /* mobil Chrome */ }
+  }
 
   function beep() {
     if (!audioCtx) return;
@@ -128,6 +158,21 @@
     return node;
   }
 
+  function renderCall(call) {
+    const node = el('div', 'call call--' + call.kind);
+    let text = 'Masa ' + call.table + ' — ' + call.kind_display;
+    if (call.pay_hint_display) text += ' (' + call.pay_hint_display + ')';
+    node.appendChild(el('strong', null, text));
+    node.appendChild(el('span', 'call__time', call.created_at));
+    const btn = el('button', 'btn btn--small btn--pay', '✓ Həll edildi');
+    btn.type = 'button';
+    btn.addEventListener('click', () => {
+      postAction('/panel/calls/' + encodeURIComponent(call.id) + '/resolve/', {}, btn, 'Alınmadı.');
+    });
+    node.appendChild(btn);
+    return node;
+  }
+
   async function load() {
     try {
       const res = await fetch(FEED_URL, { credentials: 'same-origin', cache: 'no-store' });
@@ -138,13 +183,31 @@
       if (!res.ok) throw new Error('feed ' + res.status);
       const data = await res.json();
 
-      const newIds = new Set(data.orders.filter((o) => o.status === 'new').map((o) => o.id));
+      const newOrders = data.orders.filter((o) => o.status === 'new');
+      const newIds = new Set(newOrders.map((o) => o.id));
+      const callIds = new Set(data.calls.map((c) => c.id));
+      let alerted = false;
       if (knownNewIds !== null) {
-        for (const id of newIds) {
-          if (!knownNewIds.has(id)) { beep(); break; }
+        const fresh = newOrders.filter((o) => !knownNewIds.has(o.id));
+        if (fresh.length) {
+          alerted = true;
+          notify('Yeni sifariş', fresh.map((o) => 'Masa ' + o.table).join(', '));
         }
       }
+      if (knownCallIds !== null) {
+        const freshCalls = data.calls.filter((c) => !knownCallIds.has(c.id));
+        if (freshCalls.length) {
+          alerted = true;
+          freshCalls.forEach((c) => notify('Masa ' + c.table, c.kind_display));
+        }
+      }
+      if (alerted) beep();
       knownNewIds = newIds;
+      knownCallIds = callIds;
+
+      callsEl.replaceChildren(...data.calls.map(renderCall));
+      callsEl.hidden = data.calls.length === 0;
+      document.title = (data.calls.length || newOrders.length ? '(' + (data.calls.length + newOrders.length) + ') ' : '') + baseTitle;
 
       ordersEl.replaceChildren(...data.orders.map(renderOrder));
       emptyEl.hidden = data.orders.length > 0;

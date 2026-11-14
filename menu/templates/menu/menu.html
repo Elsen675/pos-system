@@ -6,6 +6,18 @@
   {% if restaurant.logo %}<img class="logo" src="{{ restaurant.logo.url }}" alt="">{% endif %}
   <h1>{{ restaurant.name }}</h1>
   {% if table %}<p class="table-badge">Masa {{ table.number }}</p>{% endif %}
+  {% if order_context %}
+  <div class="calls" id="calls">
+    <button type="button" class="btn" data-call="waiter">🙋 Ofisiantı çağır</button>
+    <button type="button" class="btn" id="bill-toggle">🧾 Hesab istəyirəm</button>
+    <div class="calls__bill" id="bill-options" hidden>
+      <span>Necə ödəyəcəksiniz?</span>
+      <button type="button" class="btn btn--small" data-call="bill" data-pay="cash">💵 Nağd</button>
+      <button type="button" class="btn btn--small" data-call="bill" data-pay="card">💳 Kartla</button>
+    </div>
+    <p class="calls__msg" id="call-msg" hidden></p>
+  </div>
+  {% endif %}
 </header>
 
 <main class="container">

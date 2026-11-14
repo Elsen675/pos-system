@@ -313,3 +313,45 @@ class OrderItem(models.Model):
     @property
     def line_total(self):
         return self.unit_price * self.quantity
+
+
+class ServiceCall(models.Model):
+    """Masadan çağırış: "Ofisiantı çağır" və ya "Hesab istəyirəm"."""
+
+    KIND_WAITER = 'waiter'
+    KIND_BILL = 'bill'
+    KIND_CHOICES = [
+        (KIND_WAITER, 'Ofisiant çağırır'),
+        (KIND_BILL, 'Hesab istəyir'),
+    ]
+
+    PAY_HINT_CASH = 'cash'
+    PAY_HINT_CARD = 'card'
+    PAY_HINT_CHOICES = [
+        (PAY_HINT_CASH, 'Nağd'),
+        (PAY_HINT_CARD, 'Kartla'),
+    ]
+
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='calls')
+    table = models.ForeignKey(Table, on_delete=models.CASCADE, related_name='calls')
+    kind = models.CharField('növ', max_length=10, choices=KIND_CHOICES)
+    # Hesab istəyəndə müştəri necə ödəyəcəyini deyə bilər (ofisiant terminal gətirsin).
+    pay_hint = models.CharField('ödəniş üsulu', max_length=10, choices=PAY_HINT_CHOICES, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    resolved_at = models.DateTimeField('həll edilib', null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+
+    class Meta:
+        verbose_name = 'çağırış'
+        verbose_name_plural = 'çağırışlar'
+        ordering = ['created_at']
+        indexes = [models.Index(fields=['restaurant', 'resolved_at'])]
+
+    def __str__(self):
+        return f'Masa {self.table.number}: {self.get_kind_display()}'
+
+    @property
+    def is_open(self):
+        return self.resolved_at is None

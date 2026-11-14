@@ -13,10 +13,13 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from .models import Category, MenuItem, Order, Restaurant, ScanEvent, StaffProfile
+from .models import Category, MenuItem, Order, Restaurant, ScanEvent, ServiceCall, StaffProfile
 from .services import (
     OrderError,
+    call_to_dict,
     create_order,
+    create_service_call,
+    resolve_service_call,
     find_table,
     mark_paid_at_table,
     order_to_dict,
@@ -60,6 +63,7 @@ def menu_view(request, slug):
     if table is not None:
         order_context = {
             'orderUrl': reverse('menu:order_create', args=[restaurant.slug]),
+            'callUrl': reverse('menu:service_call', args=[restaurant.slug]),
             'table': table.number,
             'token': table.token,
         }
@@ -92,6 +96,21 @@ def order_create_view(request, slug):
         {'id': str(order.public_id), 'status_url': order.get_absolute_url(), 'total': str(order.total)},
         status=201,
     )
+
+
+@require_POST
+def service_call_create(request, slug):
+    """POST JSON: {table, token, kind: waiter|bill, pay_hint?: cash|card}."""
+    restaurant = get_object_or_404(Restaurant, slug=slug)
+    try:
+        payload = json.loads(request.body or b'{}')
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Sorğu düzgün deyil.'}, status=400)
+    try:
+        call, created = create_service_call(restaurant, payload)
+    except OrderError as exc:
+        return JsonResponse({'error': exc.message}, status=exc.status)
+    return JsonResponse({'id': call.pk, 'kind': call.kind, 'created': created}, status=201 if created else 200)
 
 
 @require_GET
@@ -182,7 +201,12 @@ def panel_feed(request):
         .prefetch_related('items')
         .order_by('-created_at')[:200]
     )
+    calls = (
+        ServiceCall.objects.filter(restaurant=restaurant, resolved_at__isnull=True)
+        .select_related('table')
+    )
     return JsonResponse({
+        'calls': [call_to_dict(c) for c in calls],
         'orders': [order_to_dict(o, include_table=True) for o in orders],
         'server_time': timezone.localtime().strftime('%H:%M:%S'),
     })
@@ -251,6 +275,15 @@ def panel_order_pay(request, public_id):
     except OrderError as exc:
         return JsonResponse({'error': exc.message}, status=exc.status)
     return JsonResponse(order_to_dict(order, include_table=True))
+
+
+@require_POST
+@staff_required
+def panel_call_resolve(request, pk):
+    """İşçi çağırışa cavab verdi ("Həll edildi"). Hər iki rol edə bilər."""
+    call = get_object_or_404(ServiceCall, pk=pk, restaurant=request.staff_profile.restaurant)
+    call = resolve_service_call(call, request.user)
+    return JsonResponse({'id': call.pk, 'resolved': True})
 
 
 @require_POST

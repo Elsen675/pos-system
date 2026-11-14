@@ -16,7 +16,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from .models import MenuItem, Order, OrderItem, Table
+from .models import MenuItem, Order, OrderItem, ServiceCall, Table
 
 
 class OrderError(Exception):
@@ -140,6 +140,76 @@ def create_order(restaurant, payload):
             for item_id, qty in quantities.items()
         )
     return order
+
+
+CALL_RATE_LIMIT = 6          # bir masadan ...
+CALL_RATE_WINDOW_MINUTES = 10  # ... bu qədər dəqiqədə ən çox bu qədər çağırış
+
+
+def create_service_call(restaurant, payload):
+    """Masadan "Ofisiantı çağır" / "Hesab istəyirəm".
+
+    Qaydalar sifarişdəki kimidir: xidmət aktiv olmalıdır və masa tokeni
+    düzgün olmalıdır (evdən çağırış olmasın). Əlavə olaraq:
+    - Eyni masanın eyni növdə AÇIQ çağırışı varsa, yenisi yaradılmır,
+      mövcud olan qaytarılır. Müştəri düyməni 10 dəfə bassa, ofisiant
+      10 bildiriş almır.
+    - Həll edilib yenidən çağırmaqla spam etməmək üçün vaxt limiti var.
+    Qaytarır: (call, created) — created=False olanda köhnə çağırışdır.
+    """
+    if not restaurant.is_service_active():
+        raise OrderError('Xidmət hazırda əlçatmazdır.', status=503)
+    if not isinstance(payload, dict):
+        raise OrderError('Sorğu düzgün deyil.')
+
+    table = find_table(restaurant, payload.get('table'), payload.get('token'))
+    if table is None:
+        raise OrderError('Masa təsdiqlənmədi. Masadakı kartı və ya QR kodu yenidən skan edin.', status=403)
+
+    kind = payload.get('kind')
+    if kind not in dict(ServiceCall.KIND_CHOICES):
+        raise OrderError('Çağırış növü düzgün deyil.')
+    pay_hint = payload.get('pay_hint') or ''
+    if kind != ServiceCall.KIND_BILL:
+        pay_hint = ''
+    elif pay_hint not in ('', *dict(ServiceCall.PAY_HINT_CHOICES)):
+        raise OrderError('Ödəniş üsulu düzgün deyil.')
+
+    with transaction.atomic():
+        Table.objects.select_for_update().get(pk=table.pk)  # eyni anda iki sorğu üçün kilid
+        existing = ServiceCall.objects.filter(table=table, kind=kind, resolved_at__isnull=True).first()
+        if existing is not None:
+            if pay_hint and existing.pay_hint != pay_hint:
+                existing.pay_hint = pay_hint
+                existing.save(update_fields=['pay_hint'])
+            return existing, False
+
+        since = timezone.now() - timedelta(minutes=CALL_RATE_WINDOW_MINUTES)
+        if ServiceCall.objects.filter(table=table, created_at__gte=since).count() >= CALL_RATE_LIMIT:
+            raise OrderError('Çox çağırış göndərildi. Ofisiant tezliklə yaxınlaşacaq.', status=429)
+
+        call = ServiceCall.objects.create(restaurant=restaurant, table=table, kind=kind, pay_hint=pay_hint)
+    return call, True
+
+
+def resolve_service_call(call, user):
+    """İşçi çağırışa cavab verdi. Şərtli UPDATE: iki işçi eyni anda bassa da bir dəfə yazılır."""
+    ServiceCall.objects.filter(pk=call.pk, resolved_at__isnull=True).update(
+        resolved_at=timezone.now(), resolved_by=user,
+    )
+    call.refresh_from_db()
+    return call
+
+
+def call_to_dict(call):
+    return {
+        'id': call.pk,
+        'table': call.table.number,
+        'kind': call.kind,
+        'kind_display': call.get_kind_display(),
+        'pay_hint_display': call.get_pay_hint_display() if call.pay_hint else '',
+        'created_at': timezone.localtime(call.created_at).strftime('%H:%M'),
+    }
 
 
 def mark_paid_at_table(order, user, via):

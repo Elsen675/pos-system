@@ -72,4 +72,48 @@
   });
 
   render();
+
+  // --- "Ofisiantı çağır" / "Hesab istəyirəm" ---
+  const callMsg = document.getElementById('call-msg');
+  const billOptions = document.getElementById('bill-options');
+  const CALL_TEXT = {
+    waiter: 'Ofisiant çağırıldı ✓ Tezliklə yaxınlaşacaq.',
+    bill: 'Hesab istəndi ✓ Ofisiant hesabı gətirəcək.',
+  };
+
+  function showCallMsg(text, isError) {
+    callMsg.textContent = text;
+    callMsg.classList.toggle('error', !!isError);
+    callMsg.hidden = false;
+  }
+
+  document.getElementById('bill-toggle').addEventListener('click', () => {
+    billOptions.hidden = !billOptions.hidden;
+  });
+
+  document.querySelectorAll('[data-call]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const kind = btn.dataset.call;
+      btn.disabled = true;
+      try {
+        const res = await fetch(ctx.callUrl, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') || '' },
+          body: JSON.stringify({ table: ctx.table, token: ctx.token, kind: kind, pay_hint: btn.dataset.pay || '' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          showCallMsg(CALL_TEXT[kind], false);
+          billOptions.hidden = true;
+        } else {
+          showCallMsg(data.error || 'Göndərilmədi. Yenidən cəhd edin.', true);
+        }
+      } catch (e) {
+        showCallMsg('İnternet bağlantısı yoxdur.', true);
+      }
+      // Təkrar basmaların qarşısını almaq üçün qısa fasilə (server də təkrarı birləşdirir).
+      setTimeout(() => { btn.disabled = false; }, 5000);
+    });
+  });
 })();

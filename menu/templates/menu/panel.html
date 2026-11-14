@@ -4,6 +4,7 @@
 {% block header_extra %}<button type="button" id="sound-toggle" class="btn">🔔 Səsi aktiv et</button>{% endblock %}
 {% block panel_content %}
   <p class="hint">Son yenilənmə: <span id="last-update">—</span> <span id="conn-error" class="error" hidden>Bağlantı xətası</span></p>
+  <section id="calls" class="calls-panel" hidden aria-live="polite"></section>
   <div id="orders" class="orders"></div>
   <p id="orders-empty" class="info">Aktiv sifariş yoxdur.</p>
 <template id="order-template">
