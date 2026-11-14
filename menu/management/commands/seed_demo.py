@@ -37,13 +37,14 @@ class Command(BaseCommand):
                     defaults={'price': Decimal(price), 'description': desc, 'order': i},
                 )
 
-        password = secrets.token_urlsafe(9)
-        user, _ = get_user_model().objects.get_or_create(username='demo_isci')
-        user.set_password(password)
-        user.save()
-        StaffProfile.objects.update_or_create(user=user, defaults={'restaurant': restaurant})
-
         table = restaurant.tables.get(number=1)
         self.stdout.write(self.style.SUCCESS('Demo hazırdır.'))
         self.stdout.write(f'Menyu (masa 1): {table.get_menu_url("n")}')
-        self.stdout.write(f'Panel: /panel/  istifadəçi: demo_isci  şifrə: {password}')
+
+        for username, role in (('demo_menecer', StaffProfile.ROLE_MANAGER), ('demo_isci', StaffProfile.ROLE_STAFF)):
+            password = secrets.token_urlsafe(9)
+            user, _ = get_user_model().objects.get_or_create(username=username)
+            user.set_password(password)
+            user.save()
+            StaffProfile.objects.update_or_create(user=user, defaults={'restaurant': restaurant, 'role': role})
+            self.stdout.write(f'Panel: /panel/  istifadəçi: {username}  şifrə: {password}')

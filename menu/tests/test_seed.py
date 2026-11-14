@@ -14,4 +14,7 @@ class SeedDemoTests(TestCase):
         self.assertTrue(r.is_service_active())
         self.assertEqual(r.tables.count(), 5)
         self.assertEqual(MenuItem.objects.filter(category__restaurant=r).count(), 5)
-        self.assertEqual(StaffProfile.objects.filter(restaurant=r).count(), 1)
+        profiles = StaffProfile.objects.filter(restaurant=r)
+        self.assertEqual(profiles.count(), 2)
+        self.assertEqual(profiles.get(user__username='demo_menecer').role, 'manager')
+        self.assertEqual(profiles.get(user__username='demo_isci').role, 'staff')

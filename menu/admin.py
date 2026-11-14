@@ -75,8 +75,8 @@ class ScanEventAdmin(admin.ModelAdmin):
 
 @admin.register(StaffProfile)
 class StaffProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'restaurant')
-    list_filter = ('restaurant',)
+    list_display = ('user', 'restaurant', 'role')
+    list_filter = ('restaurant', 'role')
     autocomplete_fields = ('user',)
 
 

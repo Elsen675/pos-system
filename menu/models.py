@@ -136,15 +136,28 @@ class ScanEvent(models.Model):
 class StaffProfile(models.Model):
     """İstifadəçini restorana bağlayır. Panel yalnız bu profilin restoranını göstərir."""
 
+    ROLE_MANAGER = 'manager'
+    ROLE_STAFF = 'staff'
+    ROLE_CHOICES = [
+        (ROLE_MANAGER, 'Menecer'),
+        (ROLE_STAFF, 'İşçi'),
+    ]
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='staff_profile')
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='staff')
+    # Standart dəyər ən az səlahiyyətli roldur: səhvən yaradılan hesab menyunu dəyişə bilməsin.
+    role = models.CharField('rol', max_length=10, choices=ROLE_CHOICES, default=ROLE_STAFF)
 
     class Meta:
         verbose_name = 'işçi profili'
         verbose_name_plural = 'işçi profilləri'
 
     def __str__(self):
-        return f'{self.user} @ {self.restaurant}'
+        return f'{self.user} @ {self.restaurant} ({self.get_role_display()})'
+
+    @property
+    def is_manager(self):
+        return self.role == self.ROLE_MANAGER
 
 
 class Order(models.Model):
